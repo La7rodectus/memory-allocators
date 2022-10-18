@@ -1,0 +1,8 @@
+set(CMAKE_C_EXTENSIONS off)
+set(CMAKE_C_STANDARD 17)
+if(CMAKE_C_COMPILER_ID MATCHES "^(GNU|Clang)$")
+    add_compile_options(-Wall -Wextra -Wconversion -pedantic -g -O2)
+endif()
+add_executable(prog main.c allocator.c block.c kernel.c)
+add_compile_definitions(_XOPEN_SOURCE=700)
+add_custom_target(run "./prog")

@@ -1,0 +1,10 @@
+#!/bin/bash
+
+rm CMakeCache.txt
+
+cmake CMakeLists.txt
+
+make
+
+./build/prog
+
