@@ -13,7 +13,14 @@ struct block {
 
 #define BLOCK_STRUCT_SIZE ROUND_BYTES(sizeof(struct block))
 
-void block_split(struct block *, size_t);
+void
+block_split(struct block *, size_t);
+
+struct block *
+block_merge(struct block *, struct block *);
+
+struct block *
+block_expand(struct block *);
 
 static inline void *
 block_to_payload(const struct block *block)
@@ -21,7 +28,11 @@ block_to_payload(const struct block *block)
     return (char *)block + BLOCK_STRUCT_SIZE;
 }
 
-// payload_to_block()
+static inline void *
+payload_to_block(char *block_payload)
+{
+    return (char *)block_payload - BLOCK_STRUCT_SIZE;
+}
 
 static inline size_t
 block_get_size_curr(const struct block *block)
@@ -89,11 +100,24 @@ block_clr_flag_last(struct block *block)
     block->flag_last = false;
 }
 
+static inline void
+block_clr_flag_busy(struct block *block)
+{
+    block->flag_busy = false;
+}
+
 static inline struct block *
 block_next(const struct block *block)
 {
     return (struct block *)
         ((char *)block + BLOCK_STRUCT_SIZE + block_get_size_curr(block));
+}
+
+static inline struct block *
+block_prev(const struct block *block)
+{
+    return (struct block *)
+        ((char *)block - BLOCK_STRUCT_SIZE - block_get_size_prev(block));
 }
 
 static inline void

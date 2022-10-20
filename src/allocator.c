@@ -27,7 +27,9 @@ mem_alloc(size_t size)
     if (arena == NULL)
         if (arena_alloc() < 0)
             return NULL;
-    size = ROUND_BYTES(size);
+    
+    size = ROUND_BYTES(size);    
+    
     for (block = arena;; block = block_next(block)) {
         if (!block_get_flag_busy(block) && block_get_size_curr(block) >= size) {
             block_split(block, size);
@@ -39,10 +41,41 @@ mem_alloc(size_t size)
     return NULL;
 }
 
-//void
-//mem_free(void *ptr)
-//{
-//}
+void
+mem_free(void *ptr)
+{
+    struct block *block = (struct block *)payload_to_block(ptr);    
+    block_clr_flag_busy(block);
+    
+    //exit if 1 block in general
+    if (block_get_flag_first(block) && block_get_flag_last(block)) return;
+
+    block_expand(block);
+}
+
+void *
+mem_realloc(void *ptr, size_t size) 
+{
+    struct block *block = (struct block *)payload_to_block(ptr);    
+    size = ROUND_BYTES(size);
+
+    printf("realloc block %ld to %ld\n", block_get_size_curr(block), size);
+    
+    if (block_get_size_curr(block) >= size) {
+        block_split(block, size);
+    } else {
+        block = block_expand(block);
+        if (block_get_size_curr(block) < size) {
+            mem_free(block_to_payload(block));
+            return mem_alloc(size);
+        } else {
+            block_split(block, size);
+        }
+    }
+    return block_to_payload(block);
+
+}
+
 
 void
 mem_show(const char *msg)
@@ -63,28 +96,7 @@ mem_show(const char *msg)
             block_get_size_curr(block), block_get_size_prev(block),
             block_get_flag_first(block) ? " first" : "",
             block_get_flag_last(block) ? " last" : "");
-        if (block_get_flag_last(block))
-            break;
+        
+        if (block_get_flag_last(block)) break;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
