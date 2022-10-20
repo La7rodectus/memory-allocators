@@ -73,7 +73,6 @@ block_merge(struct block *block1, struct block *block2)
         return block1;
     }
     
-
     size_t block1_size = block_get_size_curr(block1);
     size_t block2_size = block_get_size_curr(block2) + BLOCK_STRUCT_SIZE;
     size_t new_size_curr = block1_size + block2_size;

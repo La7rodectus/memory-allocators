@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 
 #include "allocator.h"
 #include "allocator_impl.h"
@@ -43,4 +44,5 @@ main(void)
 
     buf_alloc(47);
     mem_show("buf_alloc(47)");
+    printf("%d", _SC_PAGE_SIZE);
 }

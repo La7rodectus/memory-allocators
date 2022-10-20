@@ -5,8 +5,6 @@
 #include "config.h"
 #include "kernel.h"
 
-#define ARENA_SIZE (ALLOCATOR_PAGE_SIZE * ALLOCATOR_ARENA_PAGES)
-
 static struct block *arena = NULL;
 
 static int
