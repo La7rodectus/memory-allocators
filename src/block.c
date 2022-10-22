@@ -13,7 +13,7 @@ block_split(struct block *block1, size_t size)
     printf("block_split with size %ld split to %ld\n", size_curr, size);    
     printf("Min memory for split %ld\n", size + BLOCK_STRUCT_SIZE);
 
-    if (size_curr >= size + BLOCK_STRUCT_SIZE) {
+    if (size_curr > size + BLOCK_STRUCT_SIZE) {
         size_curr -= size + BLOCK_STRUCT_SIZE;
         block_set_size_curr(block1, size);
         block2 = block_next(block1);
@@ -82,6 +82,12 @@ block_merge(struct block *block1, struct block *block2)
     }
     
     block_set_size_curr(block1, new_size_curr);
+    struct block *new_next_block = block_next(block1);
+    
+    if (!block_get_flag_last(block1)) {
+        block_set_size_prev(new_next_block, block_get_size_curr(block1)); 
+    }
+
     return block1;
 }
 

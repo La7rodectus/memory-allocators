@@ -6,16 +6,29 @@
 #include "kernel.h"
 
 static struct block *arena = NULL;
+static size_t arena_size = 0;
 
-static int
-arena_alloc(void)
+void
+arena_free() {
+    kernel_mem_free((char *)arena, arena_size);
+    arena = NULL;
+    arena_size = 0;
+}
+
+int
+arena_alloc(size_t size)
 {
-    arena = kernel_mem_alloc(ARENA_SIZE);
-    if (arena == NULL)
-        return -1;
-    arena_init(arena, ARENA_SIZE - BLOCK_STRUCT_SIZE);
+    if (arena) arena_free();
+
+    size = ROUND_PAGES(size);
+    arena = kernel_mem_alloc(size);
+    if (arena == NULL) return -1;
+    
+    arena_size = size;
+    arena_init(arena, size - BLOCK_STRUCT_SIZE);
     return 0;
 }
+
 
 void *
 mem_alloc(size_t size)
@@ -23,7 +36,7 @@ mem_alloc(size_t size)
     struct block *block;
 
     if (arena == NULL)
-        if (arena_alloc() < 0)
+        if (arena_alloc(ARENA_SIZE) < 0)
             return NULL;
     
     size = ROUND_BYTES(size);    
@@ -43,12 +56,14 @@ void
 mem_free(void *ptr)
 {
     struct block *block = (struct block *)payload_to_block(ptr);    
-    block_clr_flag_busy(block);
     
-    //exit if 1 block in general
-    if (block_get_flag_first(block) && block_get_flag_last(block)) return;
-
+    block_clr_flag_busy(block);
     block_expand(block);
+
+    //return mem to kernel if 1 block in overall
+    if (block_get_flag_first(block) && block_get_flag_last(block)) {
+        arena_free();
+    }
 }
 
 void *

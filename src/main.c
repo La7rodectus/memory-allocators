@@ -44,5 +44,18 @@ main(void)
 
     buf_alloc(47);
     mem_show("buf_alloc(47)");
-    printf("%d", _SC_PAGE_SIZE);
+    
+    arena_free();
+    mem_show("arena_free()");
+
+    arena_alloc(12);
+    mem_show("arena_alloc(12)");
+    
+    void *ptr_12 = buf_alloc(12);
+    mem_show("buf_alloc(12)");
+
+    mem_free(ptr_12);
+    mem_show("mem_free(ptr_12)");
+
+    
 }
