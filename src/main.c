@@ -4,12 +4,16 @@
 #include "allocator.h"
 #include "allocator_impl.h"
 #include "block.h"
+#include "tree.h"
 
 static void
 buf_fill(char *c, size_t size)
 {
-    while (size--)
-        *c++ = (char) rand();
+    while (size--) {
+        int r = rand();
+        *c++ = (char)r;
+    }
+
 }
 
 static void *
@@ -53,9 +57,8 @@ main(void)
     
     void *ptr_12 = buf_alloc(12);
     mem_show("buf_alloc(12)");
-
     mem_free(ptr_12);
     mem_show("mem_free(ptr_12)");
-
     
+    tree();
 }
