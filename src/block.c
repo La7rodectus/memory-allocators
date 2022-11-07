@@ -2,10 +2,10 @@
 #include <stdio.h>
 #include "block.h"
 
-void
+struct block*
 block_split(struct block *block1, size_t size)
 {
-    struct block *block2;
+    struct block *block2 = NULL;
     size_t size_curr;
 
     size_curr = block_get_size_curr(block1);
@@ -27,9 +27,9 @@ block_split(struct block *block1, size_t size)
             block_set_size_prev(block_next(block2), size_curr);
         }
     }
-
+    
     block_set_flag_busy(block1);
-    // if (block2 != NULL) block_expand(block2);
+    return block2;
 }
 
 struct block *

@@ -159,22 +159,11 @@ avl_min_node(struct node* node)
 }
 
 struct node* 
-avl_delete(struct node* root, size_t key)
+_avl_delete(struct node* root, size_t key)
 {
-  
-  struct node* dup = avl_find(root, key);
-  if (dup->depth != NULL) {
-    dup->depth->left = dup->left;
-    dup->depth->right = dup->right;
-    struct node* tmp = dup->depth;
-    *dup = *tmp;
-    free(tmp);
-    return root;
-  }
-
   if (root == NULL) return root;
-  if (key < root->key) root->left = avl_delete(root->left, key);
-  else if (key > root->key) root->right = avl_delete(root->right, key);
+  if (key < root->key) root->left = _avl_delete(root->left, key);
+  else if (key > root->key) root->right = _avl_delete(root->right, key);
   else {
     if ((root->left == NULL) || (root->right == NULL)) {
       struct node *temp = root->left ? root->left : root->right;
@@ -189,7 +178,7 @@ avl_delete(struct node* root, size_t key)
     } else {
       struct node* temp = avl_min_node(root->right);
       root->key = temp->key;
-      root->right = avl_delete(root->right, temp->key);
+      root->right = _avl_delete(root->right, temp->key);
     }
   }
 
@@ -211,6 +200,26 @@ avl_delete(struct node* root, size_t key)
   }
 
   return root;
+}
+
+
+struct node* 
+avl_remove_node(struct node* root, size_t key) {
+  if (root->left == NULL && root->right == NULL && root->depth == NULL) {
+    free(root);
+    return NULL;
+  }
+  struct node* dup = avl_find(root, key);
+  if (dup->depth != NULL) {
+    dup->depth->left = dup->left;
+    dup->depth->right = dup->right;
+    struct node* tmp = dup->depth;
+    *dup = *tmp;
+    free(tmp);
+    return root;
+  } else {
+    return _avl_delete(root, key);
+  }
 }
 
 void
@@ -257,34 +266,36 @@ avl_get_free(struct node *t, size_t size)
     return NULL;
   } else {
     printf("best feet with size [%ld]! \n", n->key);
-    return n;//avl_delete(t, (*best_feet)->key);
+    return n;
   }
 }
 
-// void 
-// tree()
-// {
-//   struct node *root = NULL;
+void 
+test_tree()
+{
+  struct node *root = NULL;
  
-//   /* Constructing tree given in the above figure */
-//   root = avl_insert(root, 40, NULL);
-//   root = avl_insert(root, 20, NULL);
-//   root = avl_insert(root, 21, NULL);
-//   root = avl_insert(root, 22, NULL);
-//   root = avl_insert(root, 23, NULL);
-//   root = avl_insert(root, 24, NULL);
-//   root = avl_insert(root, 25, NULL);
-//   root = avl_insert(root, 25, NULL);
-//   root = avl_insert(root, 25, NULL);
-//   root = avl_insert(root, 25, NULL);
-//   printf("root key = %ld \n", root->key);
-//   // root = avl_delete(root, 25);
-//   // root = avl_insert(root, 25, NULL);
+  /* Constructing tree given in the above figure */
+  root = avl_insert(root, 40, NULL);
+  root = avl_insert(root, 40, NULL);
+  // root = avl_insert(root, 21, NULL);
+  // root = avl_insert(root, 22, NULL);
+  // root = avl_insert(root, 23, NULL);
+  // root = avl_insert(root, 24, NULL);
+  // root = avl_insert(root, 25, NULL);
+  // root = avl_insert(root, 25, NULL);
+  // root = avl_insert(root, 25, NULL);
+  // root = avl_insert(root, 25, NULL);
+  // printf("root key = %ld \n", root->key);
+  root = avl_remove_node(root, 40);
+   avl_print(root);
+  root = avl_remove_node(root, 40);
+  // root = avl_insert(root, 25, NULL);
 
-//   struct node *n = avl_get_free(root, 27);
-//   printf("HAVE %ld", n->key);
-//   printf("Preorder traversal of the constructed AVL tree is \n");
-//   avl_print(root);
+  struct node *n = avl_get_free(root, 27);
+  // printf("HAVE %ld", n->key);
+  printf("Preorder traversal of the constructed AVL tree is \n");
+  avl_print(root);
 
-// }
+}
 

@@ -37,28 +37,28 @@ main(void)
     void *ptr_20 = buf_alloc(20);
     mem_show("mem_alloc(1, 50, 20)");
     
-    ptr_50 = mem_realloc(ptr_50, 1);
-    mem_show("mem_realloc(ptr_40, 1)");
+    // ptr_50 = mem_realloc(ptr_50, 1);
+    // mem_show("mem_realloc(ptr_40, 1)");
 
-    mem_free(ptr_50);
-    mem_show("mem_free(50(1))");
+    // mem_free(ptr_50);
+    // mem_show("mem_free(50(1))");
     
-    mem_realloc(ptr_1, 20);
-    mem_show("mem_realloc(ptr_1, 20)");
+    // mem_realloc(ptr_1, 20);
+    // mem_show("mem_realloc(ptr_1, 20)");
 
-    buf_alloc(47);
-    mem_show("buf_alloc(47)");
+    // buf_alloc(47);
+    // mem_show("buf_alloc(47)");
     
-    arena_free();
-    mem_show("arena_free()");
+    // arena_free();
+    // mem_show("arena_free()");
 
-    arena_alloc(12);
-    mem_show("arena_alloc(12)");
+    // arena_alloc(12);
+    // mem_show("arena_alloc(12)");
     
-    void *ptr_12 = buf_alloc(12);
-    mem_show("buf_alloc(12)");
-    mem_free(ptr_12);
-    mem_show("mem_free(ptr_12)");
+    // void *ptr_12 = buf_alloc(12);
+    // mem_show("buf_alloc(12)");
+    // mem_free(ptr_12);
+    // mem_show("mem_free(ptr_12)");
     
-    // tree();
+    // test_tree();
 }

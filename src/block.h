@@ -13,7 +13,7 @@ struct block {
 
 #define BLOCK_STRUCT_SIZE ROUND_BYTES(sizeof(struct block))
 
-void
+struct block *
 block_split(struct block *, size_t);
 
 struct block *

@@ -37,23 +37,36 @@ void *
 mem_alloc(size_t size)
 {
     struct block *block;
+    struct block *block2;
+    struct node *n;
 
     if (arena == NULL)
-        if (arena_alloc(ARENA_SIZE) < 0)
-            return NULL;
+      if (arena_alloc(ARENA_SIZE) < 0)
+        return NULL;
     
     size = ROUND_BYTES(size);    
+
+    n = avl_get_free(tree, size);
+    if (n == NULL) return NULL;
+    block = (struct block*)n->ptr;
+
+    block2 = block_split(block, size);
+    tree = avl_remove_node(tree, block_get_size_curr(block));
     
-    
-    for (block = arena;; block = block_next(block)) {
-        if (!block_get_flag_busy(block) && block_get_size_curr(block) >= size) {
-            block_split(block, size);
-            tree = avl_insert(tree, block_get_size_curr(block), block);
-            return block_to_payload(block);
-        }
-        if (block_get_flag_last(block))
-            break;
+    if (block2 != NULL) {
+      tree = avl_insert(tree, block_get_size_curr(block2), block2);
+      avl_print(tree);
     }
+    return block_to_payload(block);
+    // for (block = arena;; block = block_next(block)) {
+    //     if (!block_get_flag_busy(block) && block_get_size_curr(block) >= size) {
+    //         block_split(block, size);
+    //         tree = avl_insert(tree, block_get_size_curr(block), block);
+    //         return block_to_payload(block);
+    //     }
+    //     if (block_get_flag_last(block))
+    //         break;
+    // }
     return NULL;
 }
 
