@@ -1,17 +1,7 @@
 // C program to avl_insert a node in AVL tree
 #include <stdio.h>
 #include <stdlib.h>
-// #include "block.h"
 #include "tree.h"
-
-// A utility function to get the height of the tree
-int
-height(struct node *N)
-{
-  if (N == NULL) return 0;
-  return N->height;
-}
- 
 
 struct node* 
 avl_find(struct node* n, size_t key)
@@ -22,28 +12,6 @@ avl_find(struct node* n, size_t key)
   else if(key > n->key)
     return avl_find(n->right, key);
   else return n;
-}
-
-// A utility function to get maximum of two integers
-// int 
-// max(int a, int b)
-// {
-//   return (a > b)? a : b;
-// }
- 
-/* Helper function that allocates a new node with the given key and
-    NULL left and right pointers. */
-struct node* 
-init_node(size_t key, void* ptr)
-{
-  struct node* node = (struct node*)malloc(sizeof(struct node));
-  node->key = key;
-  node->left = NULL;
-  node->right = NULL;
-  node->depth = NULL;
-  node->height = 1;
-  node->ptr = ptr;
-  return node;
 }
  
 // A utility function to right rotate subtree rooted with y
@@ -59,8 +27,8 @@ right_rotate(struct node *y)
   y->left = T2;
 
   // Update heights
-  y->height = MAX(height(y->left), height(y->right)) + 1;
-  x->height = MAX(height(x->left), height(x->right)) + 1;
+  y->height = MAX(node_get_height(y->left), node_get_height(y->right)) + 1;
+  x->height = MAX(node_get_height(x->left), node_get_height(x->right)) + 1;
 
   // Return new root
   return x;
@@ -79,8 +47,8 @@ left_rotate(struct node *x)
   x->right = T2;
 
   //  Update heights
-  x->height = MAX(height(x->left), height(x->right)) + 1;
-  y->height = MAX(height(y->left), height(y->right)) + 1;
+  x->height = MAX(node_get_height(x->left), node_get_height(x->right)) + 1;
+  y->height = MAX(node_get_height(y->left), node_get_height(y->right)) + 1;
 
   // Return new root
   return y;
@@ -91,7 +59,7 @@ int
 get_balance(struct node *N)
 {
   if (N == NULL) return 0;
-  return height(N->left) - height(N->right);
+  return node_get_height(N->left) - node_get_height(N->right);
 }
 
 // Recursive function to avl_insert a key in the subtree rooted
@@ -100,16 +68,16 @@ struct node*
 avl_insert(struct node* node, size_t key, void* ptr)
 {
   /* 1.  Perform the normal BST avl_insertion */
-  if (node == NULL) return(init_node(key, ptr));
+  if (node == NULL) return(node_init(key, ptr));
 
   struct node *dup = avl_find(node, key);
   if (dup != NULL)
   {
     printf("found dup with key = %ld \n", dup->key);
-    if (dup->depth == NULL) dup->depth = init_node(key, ptr);
+    if (dup->depth == NULL) dup->depth = node_init(key, ptr);
     else {
       struct node *tmp = dup->depth;
-      dup->depth = init_node(key, ptr);
+      dup->depth = node_init(key, ptr);
       dup->depth->depth = tmp;
     }
     dup->depth->height = dup->height;
@@ -124,7 +92,7 @@ avl_insert(struct node* node, size_t key, void* ptr)
     return node;
 
   /* 2. Update height of this ancestor node */
-  node->height = 1 + MAX(height(node->left), height(node->right));
+  node->height = 1 + MAX(node_get_height(node->left), node_get_height(node->right));
 
   /* 3. Get the balance factor of this ancestor
         node to check whether this node became
@@ -195,7 +163,7 @@ avl_delete(struct node* root, size_t key)
 {
   
   struct node* dup = avl_find(root, key);
-  if (dup != NULL) {
+  if (dup->depth != NULL) {
     dup->depth->left = dup->left;
     dup->depth->right = dup->right;
     struct node* tmp = dup->depth;
@@ -226,8 +194,8 @@ avl_delete(struct node* root, size_t key)
   }
 
   if (root == NULL) return root;
-  root->height = 1 + MAX(height(root->left),
-  height(root->right));
+  root->height = 1 + MAX(node_get_height(root->left),
+  node_get_height(root->right));
   int balance = get_balance(root);
   if (balance > 1 && get_balance(root->left) >= 0) return right_rotate(root);
 
@@ -248,14 +216,10 @@ avl_delete(struct node* root, size_t key)
 void
 avl_best_feet(struct node *t, size_t size, struct node **best)
 {
-  if (t == NULL) {
-    (*best) = NULL;
-    return;
-  }
+  if (t == NULL) return;
   if ((*best) == NULL) (*best) = t;
 
   printf("current t key = %ld \n", t->key);
-  printf("(*best)->key = %ld \n", (*best)->key);
   size_t curr_diff;
   if (t->key >= size)
   {
@@ -286,48 +250,41 @@ avl_best_feet(struct node *t, size_t size, struct node **best)
 struct node*
 avl_get_free(struct node *t, size_t size)
 {
-  struct node *best_feet = NULL;
-  avl_best_feet(t, size, &best_feet);
-  if (best_feet == NULL) {
+  struct node *n = NULL;
+  avl_best_feet(t, size, &n);
+  if (n == NULL) {
     printf("best feet with size [%ld] not found! \n", size);
     return NULL;
   } else {
-    printf("best feet with size [%ld]! \n", best_feet->key);
-    return best_feet;
+    printf("best feet with size [%ld]! \n", n->key);
+    return n;//avl_delete(t, (*best_feet)->key);
   }
 }
 
-void 
-tree()
-{
-  struct node *root = NULL;
+// void 
+// tree()
+// {
+//   struct node *root = NULL;
  
-  /* Constructing tree given in the above figure */
-  root = avl_insert(root, 40, NULL);
-  root = avl_insert(root, 20, NULL);
-  root = avl_insert(root, 21, NULL);
-  root = avl_insert(root, 22, NULL);
-  root = avl_insert(root, 23, NULL);
-  root = avl_insert(root, 24, NULL);
-  root = avl_insert(root, 25, NULL);
-  printf("root key = %ld \n", root->key);
-  root = avl_insert(root, 25, NULL);
-  printf("root key = %ld \n", root->key);
-  root = avl_insert(root, 25, NULL);
-  root = avl_insert(root, 25, NULL);
-  printf("root key = %ld \n", root->key);
-  root = avl_delete(root, 25);
-  // root = avl_insert(root, 25, NULL);
-  struct node* n = avl_find(root, 24);
-  if (n == NULL) {
-    printf("not found");
-  } else {
-    printf("found key %ld \n", n->key);
-  }
+//   /* Constructing tree given in the above figure */
+//   root = avl_insert(root, 40, NULL);
+//   root = avl_insert(root, 20, NULL);
+//   root = avl_insert(root, 21, NULL);
+//   root = avl_insert(root, 22, NULL);
+//   root = avl_insert(root, 23, NULL);
+//   root = avl_insert(root, 24, NULL);
+//   root = avl_insert(root, 25, NULL);
+//   root = avl_insert(root, 25, NULL);
+//   root = avl_insert(root, 25, NULL);
+//   root = avl_insert(root, 25, NULL);
+//   printf("root key = %ld \n", root->key);
+//   // root = avl_delete(root, 25);
+//   // root = avl_insert(root, 25, NULL);
 
+//   struct node *n = avl_get_free(root, 27);
+//   printf("HAVE %ld", n->key);
+//   printf("Preorder traversal of the constructed AVL tree is \n");
+//   avl_print(root);
 
-  printf("Preorder traversal of the constructed AVL tree is \n");
-  avl_print(root);
-
-}
+// }
 

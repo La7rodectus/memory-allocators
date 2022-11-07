@@ -60,5 +60,5 @@ main(void)
     mem_free(ptr_12);
     mem_show("mem_free(ptr_12)");
     
-    tree();
+    // tree();
 }

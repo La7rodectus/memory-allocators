@@ -4,9 +4,11 @@
 #include "block.h"
 #include "config.h"
 #include "kernel.h"
+#include "tree.h"
 
 static struct block *arena = NULL;
 static size_t arena_size = 0;
+static struct node *tree = NULL;
 
 void
 arena_free() {
@@ -26,6 +28,7 @@ arena_alloc(size_t size)
     
     arena_size = size;
     arena_init(arena, size - BLOCK_STRUCT_SIZE);
+    tree = avl_insert(tree, block_get_size_curr(arena), arena);
     return 0;
 }
 
@@ -41,9 +44,11 @@ mem_alloc(size_t size)
     
     size = ROUND_BYTES(size);    
     
+    
     for (block = arena;; block = block_next(block)) {
         if (!block_get_flag_busy(block) && block_get_size_curr(block) >= size) {
             block_split(block, size);
+            tree = avl_insert(tree, block_get_size_curr(block), block);
             return block_to_payload(block);
         }
         if (block_get_flag_last(block))
