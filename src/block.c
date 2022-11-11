@@ -11,7 +11,6 @@ block_split(struct block *block1, size_t size)
     size_curr = block_get_size_curr(block1);
     
     printf("block_split with size %ld split to %ld\n", size_curr, size);    
-    printf("Min memory for split %ld\n", size + BLOCK_STRUCT_SIZE);
 
     if (size_curr > size + BLOCK_STRUCT_SIZE) {
         size_curr -= size + BLOCK_STRUCT_SIZE;
@@ -36,28 +35,13 @@ struct block *
 block_expand(struct block *block)
 {
 
-    struct block *tmp_block_ptr = block;
-
-    if (!block_get_flag_first(block)) {
-        for (tmp_block_ptr = block_prev(block);; tmp_block_ptr = block_prev(block)) {
-            if (!block_get_flag_busy(tmp_block_ptr)) {
-                block = block_merge(tmp_block_ptr, block);
-            } else {
-                break;
-            }
-            if (block_get_flag_first(block)) break;
-        }
-    }
-
     if (!block_get_flag_last(block)) {
-        for (tmp_block_ptr = block_next(block);; tmp_block_ptr = block_next(block)) {
-            if (!block_get_flag_busy(tmp_block_ptr)) {
-                block = block_merge(block, tmp_block_ptr);
-            } else {
-                break;
-            }
-            if (block_get_flag_last(block)) break;
+       struct block *tmp_block_ptr = block_next(block);
+
+        if (!block_get_flag_busy(tmp_block_ptr)) {
+            block = block_merge(block, tmp_block_ptr);
         }
+        
     }
 
     return block;
@@ -67,7 +51,7 @@ block_expand(struct block *block)
 struct block *
 block_merge(struct block *block1, struct block *block2)
 {
-//block_get_flag_busy(block1) || 
+
     if (block_get_flag_busy(block2)) {
         printf("Can't merge non empty block!\n");
         return block1;
@@ -88,6 +72,7 @@ block_merge(struct block *block1, struct block *block2)
         block_set_size_prev(new_next_block, block_get_size_curr(block1)); 
     }
 
+    
     return block1;
 }
 

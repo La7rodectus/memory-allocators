@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tree.h"
+#include "block.h"
+#include "kernel.h"
 
 struct node* 
 avl_find(struct node* n, size_t key)
@@ -12,6 +14,16 @@ avl_find(struct node* n, size_t key)
   else if(key > n->key)
     return avl_find(n->right, key);
   else return n;
+}
+
+struct node*
+avl_node_find_ptr(struct node* n, void *ptr) {
+  struct node* res_node = n;
+  while (res_node != NULL && res_node->ptr != ptr) {
+    node_print(n);
+    res_node = res_node->depth;
+  }
+  return res_node;
 }
  
 // A utility function to right rotate subtree rooted with y
@@ -62,28 +74,9 @@ get_balance(struct node *N)
   return node_get_height(N->left) - node_get_height(N->right);
 }
 
-// Recursive function to avl_insert a key in the subtree rooted
-// with node and returns the new root of the subtree.
 struct node*
-avl_insert(struct node* node, size_t key, void* ptr)
+_avl_insert(struct node* node, size_t key, void* ptr)
 {
-  /* 1.  Perform the normal BST avl_insertion */
-  if (node == NULL) return(node_init(key, ptr));
-
-  struct node *dup = avl_find(node, key);
-  if (dup != NULL)
-  {
-    printf("found dup with key = %ld \n", dup->key);
-    if (dup->depth == NULL) dup->depth = node_init(key, ptr);
-    else {
-      struct node *tmp = dup->depth;
-      dup->depth = node_init(key, ptr);
-      dup->depth->depth = tmp;
-    }
-    dup->depth->height = dup->height;
-    return node;
-  }
-
   if (key < node->key)
     node->left = avl_insert(node->left, key, ptr);
   else if (key > node->key)
@@ -113,7 +106,7 @@ avl_insert(struct node* node, size_t key, void* ptr)
   // Left Right Case
   if (balance > 1 && key > node->left->key)
   {
-    node->left =  left_rotate(node->left);
+    node->left = left_rotate(node->left);
     return right_rotate(node);
   }
 
@@ -127,18 +120,40 @@ avl_insert(struct node* node, size_t key, void* ptr)
   /* return the (unchanged) node pointer */
   return node;
 }
+// Recursive function to avl_insert a key in the subtree rooted
+// with node and returns the new root of the subtree.
+struct node*
+avl_insert(struct node* node, size_t key, void* ptr)
+{
+  /* 1.  Perform the normal BST avl_insertion */
+  if (node == NULL) return(node_init(key, ptr));
+
+  struct node *dup = avl_find(node, key);
+  if (dup != NULL)
+  {
+    struct node *new_node = node_init(key, ptr);
+    new_node->depth = dup;
+    new_node->left = dup->left;
+    new_node->right = dup->right;
+    new_node->height = dup->height;
+    node = new_node;
+  }
+  return _avl_insert(node, key, ptr);
+}
 
 void 
 avl_print(struct node* t)
 {
   if (t == NULL) return;
-  printf("%ld",t->key);
+  printf("%ld", t->key);
 
   if (t->left != NULL) printf("(L:%ld)",t->left->key);
   if (t->right != NULL) printf("(R:%ld)",t->right->key);
+  if (t->ptr != NULL) printf("(ptr:%ld)", ((struct block*)t->ptr)->size_curr);
   struct node* tmp = t;
   while (tmp->depth != NULL) {
-    printf("(d:%ld)", tmp->depth->key);
+    if (tmp->ptr) printf("(d:%ld|ptr:%ld)", tmp->depth->key, ((struct block*)tmp->ptr)->size_curr);
+    else printf("(d:%ld)", tmp->key);
     tmp = tmp->depth;
   }
 
@@ -148,11 +163,27 @@ avl_print(struct node* t)
   avl_print(t->right);
 }
 
+void
+avl_mem_free(struct node* root) {
+  if (root == NULL) return;
+
+  avl_mem_free(root->left);
+  avl_mem_free(root->right);
+
+  struct node* tmp = NULL;
+ 
+  do {
+    tmp = root->depth;
+    kernel_mem_free(root, NODE_STRUCT_SIZE);
+    root = tmp;
+  } while (root != NULL);
+  
+}
+
 struct node * 
 avl_min_node(struct node* node)
 {
   struct node* current = node;
-  /* loop down to find the lftmost leaf */
   while (current->left != NULL)
   current = current->left;
   return current;
@@ -174,10 +205,11 @@ _avl_delete(struct node* root, size_t key)
         *root = *temp;
       }
 
-      free(temp);
+      kernel_mem_free((void*)temp, NODE_STRUCT_SIZE);
     } else {
       struct node* temp = avl_min_node(root->right);
       root->key = temp->key;
+      root->ptr = temp->ptr;
       root->right = _avl_delete(root->right, temp->key);
     }
   }
@@ -202,25 +234,40 @@ _avl_delete(struct node* root, size_t key)
   return root;
 }
 
+void
+_avl_rm_dup(struct node* root, struct node *ptr) {
+  if (root == NULL) return;
+  if (root->depth == ptr) {
+    struct node* tmp = root->depth;
+    root->depth = tmp->depth;
+    root->ptr = tmp->ptr;
+    kernel_mem_free((void*)ptr, NODE_STRUCT_SIZE);
+  } else {
+    _avl_rm_dup(root->depth, ptr);
+  }
+}
 
 struct node* 
-avl_remove_node(struct node* root, size_t key) {
+avl_remove_with_ptr(struct node* root, size_t key, void* ptr) {
   if (root->left == NULL && root->right == NULL && root->depth == NULL) {
-    free(root);
-    return NULL;
+    if (root->key == key) {
+      kernel_mem_free((void*)root, NODE_STRUCT_SIZE);
+      return NULL;
+    } else {
+      return root;
+    }
   }
-  struct node* dup = avl_find(root, key);
-  if (dup->depth != NULL) {
-    dup->depth->left = dup->left;
-    dup->depth->right = dup->right;
-    struct node* tmp = dup->depth;
-    *dup = *tmp;
-    free(tmp);
+
+  struct node* with_dup = avl_find(root, key);
+  if (with_dup->depth != NULL) {
+    struct node* curr_dup = avl_node_find_ptr(with_dup, ptr);
+    _avl_rm_dup(with_dup, curr_dup);
     return root;
   } else {
     return _avl_delete(root, key);
   }
 }
+
 
 void
 avl_best_feet(struct node *t, size_t size, struct node **best)
@@ -228,25 +275,20 @@ avl_best_feet(struct node *t, size_t size, struct node **best)
   if (t == NULL) return;
   if ((*best) == NULL) (*best) = t;
 
-  printf("current t key = %ld \n", t->key);
   size_t curr_diff;
   if (t->key >= size)
   {
     curr_diff = t->key - size;
-    printf("curr_diff = %ld \n", curr_diff);
 
     if (curr_diff == 0) {
       (*best) = t;
-      printf("found best feet = %ld \n", (*best)->key);
       return;
     }
 
     size_t prev_diff = (*best)->key - size;
-    printf("prev_diff = %ld \n", prev_diff);
 
     if (curr_diff < prev_diff) {
       (*best) = t;
-      printf("set new best feet = %ld \n", (*best)->key);
     }
 
     avl_best_feet(t->left, size, best);
@@ -276,8 +318,15 @@ test_tree()
   struct node *root = NULL;
  
   /* Constructing tree given in the above figure */
-  root = avl_insert(root, 40, NULL);
-  root = avl_insert(root, 40, NULL);
+  struct node *p1 = NULL;
+  struct node *p2 = NULL;
+  root = avl_insert(root, (size_t)40, p1);
+  p1 = root;
+  root = avl_insert(root, (size_t)42, NULL);
+  p2 = root;
+  root = avl_insert(root, (size_t)40, p2);
+  avl_print(root);
+  root = avl_remove_with_ptr(root, 40, p2);
   // root = avl_insert(root, 21, NULL);
   // root = avl_insert(root, 22, NULL);
   // root = avl_insert(root, 23, NULL);
@@ -287,12 +336,9 @@ test_tree()
   // root = avl_insert(root, 25, NULL);
   // root = avl_insert(root, 25, NULL);
   // printf("root key = %ld \n", root->key);
-  root = avl_remove_node(root, 40);
-   avl_print(root);
-  root = avl_remove_node(root, 40);
+  // avl_print(root);
   // root = avl_insert(root, 25, NULL);
 
-  struct node *n = avl_get_free(root, 27);
   // printf("HAVE %ld", n->key);
   printf("Preorder traversal of the constructed AVL tree is \n");
   avl_print(root);

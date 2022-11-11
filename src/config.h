@@ -4,10 +4,11 @@
 
   #include <unistd.h>
   #define DEFAULT_ALLOCATOR_ARENA_PAGESIZE (size_t)(sysconf(_SC_PAGESIZE))
-
+  #define _IS_UNIX 1
 #else
 
   #define DEFAULT_ALLOCATOR_ARENA_PAGESIZE 4096
+  #define _IS_WIN 1
 
 #endif
 
